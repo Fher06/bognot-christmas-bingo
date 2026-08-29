@@ -8,15 +8,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        pine: "#0B3D2E",
-        holly: "#146C43",
-        cranberry: "#B3122E",
-        gold: "#D4AF37",
-        cream: "#FBF4E6",
-        midnight: "#0A1F2B",
+        pine: "#0C2340",
+        holly: "#2851C4",
+        cranberry: "#ED1D24",
+        gold: "#FFD100",
+        cream: "#F1F3F6",
+        midnight: "#05070F",
       },
       fontFamily: {
-        display: ["Georgia", "serif"],
+        display: ["var(--font-hero)", "Impact", "sans-serif"],
       },
     },
   },
