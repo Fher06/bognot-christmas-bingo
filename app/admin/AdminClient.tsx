@@ -360,7 +360,7 @@ export default function AdminClient() {
   if (!isAdmin) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-midnight text-cream">
-        <h1 className="text-2xl font-display text-gold mb-6">🎄 Host Login</h1>
+        <h1 className="text-2xl font-display text-gold mb-6">🦸 Host Login</h1>
         <form onSubmit={handleLogin} className="w-full max-w-xs flex flex-col gap-3">
           <input
             type="email"
@@ -386,7 +386,7 @@ export default function AdminClient() {
   return (
     <main className="min-h-screen bg-midnight text-cream p-4 md:p-8 flex flex-col gap-6 max-w-4xl mx-auto">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-display text-gold">🎄 Host Console</h1>
+        <h1 className="text-2xl font-display text-gold">🦸 Host Console</h1>
         <button onClick={() => supabase.auth.signOut()} className="text-sm text-cream/60 underline">
           Log out
         </button>
