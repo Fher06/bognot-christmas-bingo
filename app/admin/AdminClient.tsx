@@ -45,6 +45,8 @@ export default function AdminClient() {
   const [cards, setCards] = useState<Card[]>([]);
   const [callouts, setCallouts] = useState<Callout[]>([]);
   const [showCallouts, setShowCallouts] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+  const [simMessage, setSimMessage] = useState("");
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) || null;
   const activeRound = rounds.find((r) => r.id === selectedEvent?.current_round_id) || null;
@@ -312,6 +314,42 @@ export default function AdminClient() {
     if (!confirm(`Remove ${name} from the game? They won't be able to win any more rounds.`)) return;
     const { error } = await supabase.rpc("disqualify_participant", { p_participant_id: id });
     if (error) alert(error.message);
+    loadParticipants();
+  }
+
+  async function handleSimulate(count: number) {
+    if (!selectedEvent) return;
+    if (!confirm(`Generate ${count} fake test participants for "${selectedEvent.name}"?`)) return;
+    setSimulating(true);
+    setSimMessage("");
+    const { data, error } = await supabase.rpc("simulate_participants", {
+      p_event_id: selectedEvent.id,
+      p_count: count,
+    });
+    setSimulating(false);
+    if (error) {
+      setSimMessage(`Error: ${error.message}`);
+      return;
+    }
+    setSimMessage(`✅ Generated ${data} fake participants.`);
+    loadParticipants();
+  }
+
+  async function handleClearSimulated() {
+    if (!selectedEvent) return;
+    if (!confirm("Delete ALL simulated test participants for this event? Real participants are not affected."))
+      return;
+    setSimulating(true);
+    setSimMessage("");
+    const { data, error } = await supabase.rpc("delete_simulated_participants", {
+      p_event_id: selectedEvent.id,
+    });
+    setSimulating(false);
+    if (error) {
+      setSimMessage(`Error: ${error.message}`);
+      return;
+    }
+    setSimMessage(`🗑️ Removed ${data} simulated participants.`);
     loadParticipants();
   }
 
@@ -599,6 +637,34 @@ export default function AdminClient() {
               })}
               {participants.length === 0 && <p className="text-cream/50 text-sm">No participants yet.</p>}
             </div>
+          </section>
+
+          {/* Simulation Mode */}
+          <section className="bg-pine/30 border border-cranberry/50 rounded-xl p-4">
+            <h2 className="font-bold text-gold mb-1">🧪 Simulation Mode</h2>
+            <p className="text-sm text-cream/60 mb-3">
+              Generate fake test participants to stress-test the app before the party. Easy to delete afterward.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {[10, 50, 100, 200, 300].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => handleSimulate(n)}
+                  disabled={simulating}
+                  className="bg-cream/10 rounded px-3 py-1.5 text-sm font-bold disabled:opacity-50"
+                >
+                  +{n} players
+                </button>
+              ))}
+              <button
+                onClick={handleClearSimulated}
+                disabled={simulating}
+                className="bg-cranberry rounded px-3 py-1.5 text-sm font-bold disabled:opacity-50 ml-auto"
+              >
+                🗑️ Clear all simulated
+              </button>
+            </div>
+            {simMessage && <p className="text-sm text-gold">{simMessage}</p>}
           </section>
 
           {/* Callout manager */}
