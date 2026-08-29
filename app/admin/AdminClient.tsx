@@ -35,6 +35,10 @@ export default function AdminClient() {
   const [draws, setDraws] = useState<DrawRow[]>([]);
   const [lastCallout, setLastCallout] = useState<Callout | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const [pendingWinners, setPendingWinners] = useState<
+    { winner_id: string; participant_name: string; card_number: number }[]
+  >([]);
+  const [confirming, setConfirming] = useState(false);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
@@ -164,6 +168,17 @@ export default function AdminClient() {
         .eq("round_id", activeRound.id)
         .order("draw_order", { ascending: true });
       setDraws((data as DrawRow[]) ?? []);
+
+      // Pick up any winners detected but not yet confirmed (e.g. after a page refresh)
+      const { data: w } = await supabase.rpc("get_round_winners", { p_round_id: activeRound.id });
+      const unconfirmed = (w ?? []).filter((x: any) => !x.confirmed);
+      setPendingWinners(
+        unconfirmed.map((x: any) => ({
+          winner_id: x.winner_id,
+          participant_name: x.participant_name,
+          card_number: x.card_number,
+        }))
+      );
     })();
 
     const channel = supabase
@@ -228,6 +243,19 @@ export default function AdminClient() {
     setDrawing(false);
     if (error) return alert(error.message);
     setLastCallout(data.callout ?? null);
+    if (data.winners && data.winners.length > 0) {
+      setPendingWinners(data.winners);
+      loadRounds(); // round auto-pauses when winners are found
+    }
+  }
+
+  async function handleConfirmWinners() {
+    if (!activeRound) return;
+    setConfirming(true);
+    const { error } = await supabase.rpc("confirm_winners", { p_round_id: activeRound.id });
+    setConfirming(false);
+    if (error) return alert(error.message);
+    setPendingWinners([]);
   }
 
   async function handleUndo() {
@@ -438,9 +466,31 @@ export default function AdminClient() {
                 Drawing — Round {activeRound.round_number}: {activeRound.name} [{activeRound.status}]
               </h2>
 
+              {pendingWinners.length > 0 && (
+                <div className="w-full bg-gold text-pine rounded-lg p-4 text-center">
+                  <p className="font-display font-bold text-xl mb-2">
+                    🎉 {pendingWinners.length} WINNER{pendingWinners.length > 1 ? "S" : ""} DETECTED
+                  </p>
+                  <ul className="mb-3">
+                    {pendingWinners.map((w) => (
+                      <li key={w.winner_id} className="font-bold">
+                        {w.participant_name} — Card #{String(w.card_number).padStart(3, "0")}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={handleConfirmWinners}
+                    disabled={confirming}
+                    className="bg-cranberry text-cream rounded px-4 py-2 font-bold disabled:opacity-50"
+                  >
+                    {confirming ? "Confirming..." : "Confirm & Celebrate 🎊"}
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={handleDraw}
-                disabled={drawing || activeRound.status !== "active"}
+                disabled={drawing || activeRound.status !== "active" || pendingWinners.length > 0}
                 className="w-40 h-40 rounded-full bg-cranberry border-4 border-gold text-2xl font-display font-bold disabled:opacity-40"
               >
                 {drawing ? "..." : "DRAW"}
