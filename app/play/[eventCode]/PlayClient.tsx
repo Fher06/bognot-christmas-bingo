@@ -264,7 +264,7 @@ export default function PlayClient({ eventCode }: { eventCode: string }) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6">
         <h1 className="text-2xl md:text-3xl font-display text-gold mb-1 text-center">
-          🎄 {event?.name ?? "Bognot Family Christmas Bingo"}
+          🦸 {event?.name ?? "Bognot Bingo of the Superheroes"}
         </h1>
         <p className="text-cream/70 mb-6 text-center">Enter your name to join the game</p>
         <form
@@ -337,7 +337,7 @@ export default function PlayClient({ eventCode }: { eventCode: string }) {
 
       {celebration && celebration.length > 0 && (
         <div className="fixed inset-0 bg-cranberry/95 flex flex-col items-center justify-center gap-3 z-50 p-6 text-center">
-          <p className="text-5xl">🎉🎄🎁</p>
+          <p className="text-5xl">🎉🦸💥</p>
           <p className="text-5xl font-display font-bold text-gold">BINGO!!!</p>
           {celebration.map((w) => (
             <p key={w.winner_id} className="text-2xl font-bold text-cream">
