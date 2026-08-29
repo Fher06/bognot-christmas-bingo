@@ -182,7 +182,7 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
   return (
     <main className="min-h-screen bg-gradient-to-b from-pine to-midnight text-cream p-6 flex flex-col gap-4 overflow-hidden">
       <header className="flex items-center justify-between">
-        <h1 className="text-3xl xl:text-5xl font-display text-gold">🎄 {event.name} 🎄</h1>
+        <h1 className="text-3xl xl:text-5xl font-display text-gold">🦸 {event.name} 🦸</h1>
         <div className="flex items-center gap-4">
           {round && (
             <div className="text-right">
@@ -293,7 +293,7 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
       {celebration && celebration.length > 0 && (
         <div className="fixed inset-0 bg-cranberry/95 flex flex-col items-center justify-center gap-4 z-50 animate-[pulse_2s_ease-in-out_infinite]">
           <div className="flex gap-3 text-6xl">
-            🎉🎄🔔🎁🎄🎉
+            🎉💥🦸🛡️🦸💥🎉
           </div>
           <p className="text-7xl xl:text-9xl font-display font-bold text-gold drop-shadow-lg">BINGO!!!</p>
           <div className="flex flex-col items-center gap-2 mt-4">
@@ -305,7 +305,7 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
           </div>
           <p className="text-xl xl:text-3xl text-cream/90 mt-2">{celebration[0].pattern_name} Winner!</p>
           <div className="flex gap-3 text-6xl">
-            🎉🎄🔔🎁🎄🎉
+            🎉💥🦸🛡️🦸💥🎉
           </div>
         </div>
       )}
