@@ -39,6 +39,7 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
   }, [eventCode]);
   const [celebration, setCelebration] = useState<WinnerAnnouncement[] | null>(null);
   const shownWinnerIds = useState(() => new Set<string>())[0];
+  const [roundLoading, setRoundLoading] = useState(true);
 
   function speak(text: string) {
     if (!audioOn) return;
@@ -80,17 +81,21 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
 
   // Load round + pattern + draws whenever current round changes
   useEffect(() => {
-    if (!event?.current_round_id) {
+    if (!event) return; // event itself hasn't loaded yet — wait
+    if (!event.current_round_id) {
       setRound(null);
       setDraws([]);
+      setRoundLoading(false);
       return;
     }
     let cancelled = false;
+    setRoundLoading(true);
 
     (async () => {
       const { data: r } = await supabase.from("rounds").select("*").eq("id", event.current_round_id).single();
       if (cancelled || !r) return;
       setRound(r as RoundRow);
+      setRoundLoading(false);
 
       if (r.pattern_id) {
         const { data: p } = await supabase.from("bingo_patterns").select("*").eq("id", r.pattern_id).single();
@@ -197,7 +202,13 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
         </div>
       </header>
 
-      {!round && (
+      {roundLoading && (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-2xl text-cream/40">Loading...</p>
+        </div>
+      )}
+
+      {!roundLoading && !round && (
         <div className="flex-1 flex flex-col items-center justify-center gap-6">
           <p className="text-3xl text-cream/60">Scan to join the game!</p>
           {joinUrl && (
@@ -214,7 +225,7 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
         </div>
       )}
 
-      {round && (
+      {!roundLoading && round && (
         <div className="flex-1 grid grid-cols-1 xl:grid-cols-[auto_1fr] gap-8 items-center">
           {/* Left: big ball + callout + pattern */}
           <div className="flex flex-col items-center gap-4">
