@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/lib/supabase/client";
 import {
   Card,
@@ -403,6 +404,31 @@ export default function AdminClient() {
 
       {selectedEvent && (
         <>
+          {/* QR / join info */}
+          <section className="bg-pine/30 border border-gold/30 rounded-xl p-4 flex flex-wrap items-center gap-4">
+            <div className="bg-cream p-3 rounded-lg">
+              <QRCodeSVG
+                value={
+                  typeof window !== "undefined"
+                    ? `${window.location.origin}/play/${selectedEvent.event_code}`
+                    : ""
+                }
+                size={100}
+                bgColor="#FBF4E6"
+                fgColor="#0B3D2E"
+              />
+            </div>
+            <div>
+              <p className="text-cream/60 text-sm">Participants join at:</p>
+              <p className="text-gold font-bold">
+                {typeof window !== "undefined" ? window.location.host : ""}/play/{selectedEvent.event_code}
+              </p>
+              <p className="text-cream/60 text-sm mt-1">
+                Or show the QR code on the TV screen (it displays automatically before a round starts).
+              </p>
+            </div>
+          </section>
+
           {/* Rounds */}
           <section className="bg-pine/30 border border-gold/30 rounded-xl p-4">
             <h2 className="font-bold text-gold mb-2">Rounds</h2>
