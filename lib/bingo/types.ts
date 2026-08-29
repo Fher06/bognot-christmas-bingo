@@ -65,6 +65,23 @@ export const LETTER_RANGES: Record<"B" | "I" | "N" | "G" | "O", [number, number]
   O: [61, 75],
 };
 
+export type CalloutRow = {
+  number: number;
+  letter: "B" | "I" | "N" | "G" | "O";
+  text: string;
+  is_special: boolean;
+  enabled: boolean;
+};
+
+export type WinnerRow = {
+  id: string;
+  round_id: string;
+  participant_id: string;
+  card_id: string;
+  pattern_id: string;
+  confirmed: boolean;
+};
+
 export function letterForNumber(n: number): "B" | "I" | "N" | "G" | "O" {
   if (n <= 15) return "B";
   if (n <= 30) return "I";
