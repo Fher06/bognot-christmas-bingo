@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/lib/supabase/client";
 import {
   CalloutRow,
@@ -29,6 +30,13 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
   const [callout, setCallout] = useState<CalloutRow | null>(null);
   const [ballPop, setBallPop] = useState(false);
   const [audioOn, setAudioOn] = useState(true);
+  const [joinUrl, setJoinUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setJoinUrl(`${window.location.origin}/play/${eventCode.toUpperCase()}`);
+    }
+  }, [eventCode]);
   const [celebration, setCelebration] = useState<WinnerAnnouncement[] | null>(null);
   const shownWinnerIds = useState(() => new Set<string>())[0];
 
@@ -190,8 +198,19 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
       </header>
 
       {!round && (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-3xl text-cream/60">Waiting for the host to start a round...</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-6">
+          <p className="text-3xl text-cream/60">Scan to join the game!</p>
+          {joinUrl && (
+            <div className="bg-cream p-6 rounded-2xl shadow-2xl">
+              <QRCodeSVG value={joinUrl} size={280} bgColor="#FBF4E6" fgColor="#0B3D2E" />
+            </div>
+          )}
+          <div className="text-center">
+            <p className="text-cream/60 text-lg">Or go to:</p>
+            <p className="text-gold text-2xl font-bold">{joinUrl.replace(/^https?:\/\//, "")}</p>
+            <p className="text-cream/60 text-lg mt-2">Game code:</p>
+            <p className="text-gold text-4xl font-display font-bold tracking-widest">{eventCode.toUpperCase()}</p>
+          </div>
         </div>
       )}
 
