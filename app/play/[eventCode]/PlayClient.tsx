@@ -40,6 +40,37 @@ export default function PlayClient({ eventCode }: { eventCode: string }) {
   const roundChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Step 1: look up the event by its short code
+  // Detect real network drops (wifi loss, phone locked, etc.) so the person
+  // sees an honest "Reconnecting..." status and we refresh their state
+  // automatically once the connection comes back — no manual refresh needed.
+  useEffect(() => {
+    function handleOffline() {
+      setConnStatus("reconnecting");
+    }
+    async function handleOnline() {
+      setConnStatus("connecting");
+      if (event && round) {
+        const deviceId = getDeviceId();
+        const name = window.localStorage.getItem(`bognot_name_${event.id}`) ?? "";
+        await attemptJoin(event, deviceId, name);
+        const { data: drawData } = await supabase
+          .from("draws")
+          .select("*")
+          .eq("round_id", round.id)
+          .order("draw_order", { ascending: true });
+        setDraws((drawData as DrawRow[]) ?? []);
+      }
+      setConnStatus("connected");
+    }
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id, round?.id]);
+
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
