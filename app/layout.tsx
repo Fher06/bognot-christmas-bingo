@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Bognot Family Christmas Bingo",
+  title: "Bognot Bingo of the Superheroes",
   description: "Live multiplayer Christmas Bingo for the Bognot family party",
 };
 
