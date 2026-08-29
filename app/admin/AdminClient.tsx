@@ -11,7 +11,7 @@ import {
   RoundRow,
 } from "@/lib/bingo/types";
 
-type Callout = { number: number; letter: string; text: string; is_special: boolean };
+type Callout = { number: number; letter: string; text: string; is_special: boolean; enabled: boolean };
 
 export default function AdminClient() {
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -42,6 +42,8 @@ export default function AdminClient() {
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
+  const [callouts, setCallouts] = useState<Callout[]>([]);
+  const [showCallouts, setShowCallouts] = useState(false);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId) || null;
   const activeRound = rounds.find((r) => r.id === selectedEvent?.current_round_id) || null;
@@ -77,7 +79,18 @@ export default function AdminClient() {
   useEffect(() => {
     if (!isAdmin) return;
     loadEvents();
+    loadCallouts();
   }, [isAdmin]);
+
+  async function loadCallouts() {
+    const { data } = await supabase.from("callouts").select("*").order("number");
+    setCallouts((data as Callout[]) ?? []);
+  }
+
+  async function toggleCallout(number: number, enabled: boolean) {
+    await supabase.from("callouts").update({ enabled: !enabled }).eq("number", number);
+    loadCallouts();
+  }
 
   async function loadEvents() {
     const { data } = await supabase.from("events").select("*").order("created_at", { ascending: false });
@@ -560,6 +573,40 @@ export default function AdminClient() {
               })}
               {participants.length === 0 && <p className="text-cream/50 text-sm">No participants yet.</p>}
             </div>
+          </section>
+
+          {/* Callout manager */}
+          <section className="bg-pine/30 border border-gold/30 rounded-xl p-4">
+            <button
+              onClick={() => setShowCallouts((v) => !v)}
+              className="font-bold text-gold w-full text-left flex items-center justify-between"
+            >
+              <span>Pinoy Callouts ({callouts.filter((c) => c.enabled).length}/{callouts.length} enabled)</span>
+              <span>{showCallouts ? "▲" : "▼"}</span>
+            </button>
+            {showCallouts && (
+              <div className="max-h-72 overflow-y-auto mt-3 flex flex-col gap-1">
+                {callouts.map((c) => (
+                  <label
+                    key={c.number}
+                    className={`flex items-center gap-2 px-2 py-1 rounded text-sm ${
+                      c.enabled ? "bg-cream/5" : "opacity-40"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={c.enabled}
+                      onChange={() => toggleCallout(c.number, c.enabled)}
+                    />
+                    <span className="font-bold text-gold w-10">
+                      {c.letter}{c.number}
+                    </span>
+                    <span className="flex-1">{c.text}</span>
+                    {c.is_special && <span className="text-xs text-cranberry">SPECIAL</span>}
+                  </label>
+                ))}
+              </div>
+            )}
           </section>
         </>
       )}
