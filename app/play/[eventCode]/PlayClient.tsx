@@ -27,6 +27,10 @@ export default function PlayClient({ eventCode }: { eventCode: string }) {
   const [pattern, setPattern] = useState<PatternRow | null>(null);
   const [draws, setDraws] = useState<DrawRow[]>([]);
   const [marked, setMarked] = useState<Set<number>>(new Set());
+  const [celebration, setCelebration] = useState<
+    { winner_id: string; participant_name: string; card_number: number }[] | null
+  >(null);
+  const shownWinnerIds = useState(() => new Set<string>())[0];
   const [connStatus, setConnStatus] = useState<"connecting" | "connected" | "reconnecting">(
     "connecting"
   );
@@ -174,6 +178,22 @@ export default function PlayClient({ eventCode }: { eventCode: string }) {
         { event: "UPDATE", schema: "public", table: "rounds", filter: `id=eq.${round.id}` },
         (payload) => setRound(payload.new as RoundRow)
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "winners", filter: `round_id=eq.${round.id}` },
+        async (payload) => {
+          const updated = payload.new as { confirmed: boolean; id: string };
+          if (updated.confirmed && !shownWinnerIds.has(updated.id)) {
+            const { data } = await supabase.rpc("get_round_winners", { p_round_id: round.id });
+            const fresh = (data ?? []).filter((w: any) => w.confirmed && !shownWinnerIds.has(w.winner_id));
+            if (fresh.length > 0) {
+              fresh.forEach((w: any) => shownWinnerIds.add(w.winner_id));
+              setCelebration(fresh);
+              setTimeout(() => setCelebration(null), 7000);
+            }
+          }
+        }
+      )
       .subscribe((status) => {
         setConnStatus(status === "SUBSCRIBED" ? "connected" : "reconnecting");
       });
@@ -283,6 +303,18 @@ export default function PlayClient({ eventCode }: { eventCode: string }) {
         markedSet={marked}
         onToggleMark={toggleMark}
       />
+
+      {celebration && celebration.length > 0 && (
+        <div className="fixed inset-0 bg-cranberry/95 flex flex-col items-center justify-center gap-3 z-50 p-6 text-center">
+          <p className="text-5xl">🎉🎄🎁</p>
+          <p className="text-5xl font-display font-bold text-gold">BINGO!!!</p>
+          {celebration.map((w) => (
+            <p key={w.winner_id} className="text-2xl font-bold text-cream">
+              {w.participant_name} — Card #{String(w.card_number).padStart(3, "0")}
+            </p>
+          ))}
+        </div>
+      )}
     </main>
   );
 }
