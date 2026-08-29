@@ -28,8 +28,19 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
   const [draws, setDraws] = useState<DrawRow[]>([]);
   const [callout, setCallout] = useState<CalloutRow | null>(null);
   const [ballPop, setBallPop] = useState(false);
+  const [audioOn, setAudioOn] = useState(true);
   const [celebration, setCelebration] = useState<WinnerAnnouncement[] | null>(null);
   const shownWinnerIds = useState(() => new Set<string>())[0];
+
+  function speak(text: string) {
+    if (!audioOn) return;
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.95;
+    utter.pitch = 1.05;
+    window.speechSynthesis.speak(utter);
+  }
 
   // Load event, then keep it live
   useEffect(() => {
@@ -102,7 +113,13 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
             .select("*")
             .eq("number", newDraw.number)
             .maybeSingle();
-          setCallout((c as CalloutRow) ?? null);
+          const found = (c as CalloutRow) ?? null;
+          setCallout(found);
+          const letterWord: Record<string, string> = { B: "B", I: "I", N: "N", G: "G", O: "O" };
+          const spoken = found
+            ? `${letterWord[newDraw.letter]}, ${newDraw.number}... ${found.text}`
+            : `${letterWord[newDraw.letter]}, ${newDraw.number}`;
+          speak(spoken);
         }
       )
       .subscribe();
@@ -122,6 +139,8 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
             if (freshlyConfirmed.length > 0) {
               freshlyConfirmed.forEach((w) => shownWinnerIds.add(w.winner_id));
               setCelebration(freshlyConfirmed);
+              const names = freshlyConfirmed.map((w) => w.participant_name).join(", ");
+              speak(`Bingo! Congratulations ${names}!`);
               setTimeout(() => setCelebration(null), 9000);
             }
           }
@@ -151,14 +170,23 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
     <main className="min-h-screen bg-gradient-to-b from-pine to-midnight text-cream p-6 flex flex-col gap-4 overflow-hidden">
       <header className="flex items-center justify-between">
         <h1 className="text-3xl xl:text-5xl font-display text-gold">🎄 {event.name} 🎄</h1>
-        {round && (
-          <div className="text-right">
-            <p className="text-lg xl:text-2xl text-cream/80">
-              Round {round.round_number}: {round.name}
-            </p>
-            {round.prize && <p className="text-gold text-xl xl:text-2xl font-bold">{round.prize}</p>}
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {round && (
+            <div className="text-right">
+              <p className="text-lg xl:text-2xl text-cream/80">
+                Round {round.round_number}: {round.name}
+              </p>
+              {round.prize && <p className="text-gold text-xl xl:text-2xl font-bold">{round.prize}</p>}
+            </div>
+          )}
+          <button
+            onClick={() => setAudioOn((v) => !v)}
+            className="text-2xl bg-cream/10 rounded-full w-12 h-12 flex items-center justify-center flex-shrink-0"
+            title={audioOn ? "Mute" : "Unmute"}
+          >
+            {audioOn ? "🔊" : "🔇"}
+          </button>
+        </div>
       </header>
 
       {!round && (
