@@ -13,6 +13,14 @@ import {
 
 const LETTERS: ("B" | "I" | "N" | "G" | "O")[] = ["B", "I", "N", "G", "O"];
 
+type WinnerAnnouncement = {
+  winner_id: string;
+  participant_name: string;
+  card_number: number;
+  confirmed: boolean;
+  pattern_name: string;
+};
+
 export default function TVClient({ eventCode }: { eventCode: string }) {
   const [event, setEvent] = useState<EventRow | null>(null);
   const [round, setRound] = useState<RoundRow | null>(null);
@@ -20,6 +28,8 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
   const [draws, setDraws] = useState<DrawRow[]>([]);
   const [callout, setCallout] = useState<CalloutRow | null>(null);
   const [ballPop, setBallPop] = useState(false);
+  const [celebration, setCelebration] = useState<WinnerAnnouncement[] | null>(null);
+  const shownWinnerIds = useState(() => new Set<string>())[0];
 
   // Load event, then keep it live
   useEffect(() => {
@@ -97,9 +107,32 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
       )
       .subscribe();
 
+    const winnerChannel = supabase
+      .channel(`tv-winners-${event.current_round_id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "winners", filter: `round_id=eq.${event.current_round_id}` },
+        async (payload) => {
+          const updated = payload.new as { confirmed: boolean; id: string };
+          if (updated.confirmed && !shownWinnerIds.has(updated.id)) {
+            const { data } = await supabase.rpc("get_round_winners", { p_round_id: event.current_round_id });
+            const freshlyConfirmed = ((data as WinnerAnnouncement[]) ?? []).filter(
+              (w) => w.confirmed && !shownWinnerIds.has(w.winner_id)
+            );
+            if (freshlyConfirmed.length > 0) {
+              freshlyConfirmed.forEach((w) => shownWinnerIds.add(w.winner_id));
+              setCelebration(freshlyConfirmed);
+              setTimeout(() => setCelebration(null), 9000);
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
       supabase.removeChannel(channel);
+      supabase.removeChannel(winnerChannel);
     };
   }, [event?.current_round_id]);
 
@@ -194,6 +227,27 @@ export default function TVClient({ eventCode }: { eventCode: string }) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Winner celebration overlay */}
+      {celebration && celebration.length > 0 && (
+        <div className="fixed inset-0 bg-cranberry/95 flex flex-col items-center justify-center gap-4 z-50 animate-[pulse_2s_ease-in-out_infinite]">
+          <div className="flex gap-3 text-6xl">
+            🎉🎄🔔🎁🎄🎉
+          </div>
+          <p className="text-7xl xl:text-9xl font-display font-bold text-gold drop-shadow-lg">BINGO!!!</p>
+          <div className="flex flex-col items-center gap-2 mt-4">
+            {celebration.map((w) => (
+              <p key={w.winner_id} className="text-3xl xl:text-5xl font-bold text-cream text-center">
+                {w.participant_name} — Card #{String(w.card_number).padStart(3, "0")}
+              </p>
+            ))}
+          </div>
+          <p className="text-xl xl:text-3xl text-cream/90 mt-2">{celebration[0].pattern_name} Winner!</p>
+          <div className="flex gap-3 text-6xl">
+            🎉🎄🔔🎁🎄🎉
           </div>
         </div>
       )}
